@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "StorageCleaner (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "StorageCleaner (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

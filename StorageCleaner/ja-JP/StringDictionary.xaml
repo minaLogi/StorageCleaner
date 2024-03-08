@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <x:String x:Key="SelectFolder">フォルダーを指定</x:String>
+    <x:String x:Key="IgnoreFileName">ファイル名を無視</x:String>
+    <x:String x:Key="Start">実行</x:String>
+    <x:String x:Key="SearchingDuplications">重複を検出中</x:String>
+    <x:String x:Key="DuplicationFound">件の重複が検出されました。</x:String>
+    <x:String x:Key="DuplicationsFound">件の重複が検出されました。</x:String>
+    <x:String x:Key="FileFound">件のファイルが検出されました。</x:String>
+    <x:String x:Key="FilesFound">件のファイルが検出されました。</x:String>
+    <x:String x:Key="File">件のファイルがスキャン済み</x:String>
+    <x:String x:Key="Files">件のファイルがスキャン済み</x:String>
+</ResourceDictionary>
