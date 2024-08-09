@@ -89,7 +89,7 @@ namespace StorageCleaner
                 TargetFolder = folder;
                 var drive = DriveInfo.GetDrives()
                 .Where(x => x.Name == Path.GetPathRoot(folder.Path)).First();
-                var label = drive.VolumeLabel == string.Empty ? "Local Disk" : drive.VolumeLabel;
+                var label = drive.VolumeLabel == string.Empty ? (string)Application.Current.Resources["LocalDisk"] : drive.VolumeLabel;
                 DriveName.Text = label + " (" + drive.Name + ")";
                 Debug.WriteLine(drive.AvailableFreeSpace);
                 Debug.WriteLine(drive.TotalSize);
@@ -99,7 +99,7 @@ namespace StorageCleaner
 
         private void StartButtonClicked(object sender, RoutedEventArgs e)
         {
-            DuplicationsWindow = new DuplicationsWindow(TargetFolder, IgnoreFileName.IsChecked.Value);
+            DuplicationsWindow = new DuplicationsWindow(TargetFolder, IgnoreFileName.IsChecked.Value, (int)WorkerCountSlider.Value);
             DuplicationsWindow.Activate();
             Close();
         }

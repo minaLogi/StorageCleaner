@@ -12,6 +12,8 @@ using StorageCleaner.Controls;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Collections.Concurrent;
+using System.Collections.Immutable;
+using Windows.Graphics;
 
 namespace StorageCleaner
 {
@@ -38,9 +40,15 @@ namespace StorageCleaner
             }
         }
         private string _windowTitle;
-        public DuplicationsWindow(StorageFolder folder, bool isIgnoreFileName)
+        public DuplicationsWindow(StorageFolder folder, bool isIgnoreFileName, int workerCount)
         {
             this.InitializeComponent();
+
+            IntPtr hWnd = WindowNative.GetWindowHandle(this);
+            WindowId myWndId = Win32Interop.GetWindowIdFromWindow(hWnd);
+            AppWindow appWindow = AppWindow.GetFromWindowId(myWndId);
+            appWindow.Resize(new SizeInt32(1200, 800));
+
             Closed += CloseButtonClicked;
             Instance = this;
             SystemBackdrop = new MicaBackdrop();
@@ -48,7 +56,7 @@ namespace StorageCleaner
             WindowTitle = (string)Application.Current.Resources["SearchingDuplications"];
             FilesDataBase.IgnoreFileName = isIgnoreFileName;
             ProcessThreads = new() { new ProcessThread(0, ThreadMode.Find, folder) };
-            for (int i = 1; i < 8; i++)
+            for (int i = 1; i < workerCount+1; i++)
             {
                 ProcessThreads.Add(new ProcessThread(i, ThreadMode.Calc, folder));
             }
@@ -111,22 +119,24 @@ namespace StorageCleaner
                 + (string)Application.Current.Resources["FileFound"];
             }
             Debug.WriteLine("File collection successed");
-            processPr.IsIndeterminate = false;
             processPr.Value = 0;
             while (ProcessThreads.Select(t => t.IsRunning).Contains(true))
             {
-                DuplicationsChanged(FilesDataBase.Duplications);
+                DuplicationsChanged(FilesDataBase.Duplications, false);
                 await Task.Delay(2000);
                 updateCount();
+                processPr.IsIndeterminate = false;
             }
             IsRunning = false;
-            DuplicationsChanged(FilesDataBase.Duplications);
+            DuplicationsChanged(FilesDataBase.Duplications, true);
+            await Task.Delay(2000);
+            updateCount();
             
         }
 
         private void updateCount()
         {
-            int c = DuplicationsStackPanel.Children.Count;
+            int c = FilesDataBase.Duplications.Count;
             int pt = ProcessThread.checkedCount;
             if(scanned == string.Empty)
             {
@@ -144,6 +154,8 @@ namespace StorageCleaner
                 WindowTitle = c.ToString()
                 + (string)Application.Current.Resources["DuplicationsFound"];
                 DetailsBlock.Text = scanned + pt.ToString()
+                + "/"
+                + ProcessThread.fileCount
                 + (string)Application.Current.Resources["Files"];
             }
             else
@@ -151,23 +163,66 @@ namespace StorageCleaner
                 WindowTitle = c.ToString()
                 + (string)Application.Current.Resources["DuplicationFound"];
                 DetailsBlock.Text = scanned + pt.ToString()
+                + "/"
+                + ProcessThread.fileCount
                 + (string)Application.Current.Resources["File"];
             }
             processPr.Value = 100 * ((float)ProcessThread.checkedCount / (float)ProcessThread.fileCount);
         }
 
-        public void DuplicationsChanged(ConcurrentBag<DuplicatingFiles> duplicatingFiles)
+        public void DuplicationsChanged(ConcurrentBag<DuplicatingFiles> duplicatingFiles, bool loadAllDuplications)
         {
-            if (duplicatingFiles.Count != 0)
+            var filesToAdd = duplicatingFiles.ToList();
+            if (loadAllDuplications)
             {
                 DuplicationsStackPanel.Children.Clear();
-                foreach (DuplicatingFiles i in duplicatingFiles)
+            }
+            else
+            {
+                var current = DuplicationsStackPanel.Children.Select(child => ((DuplicationsCard)child).DuplicatingFiles.Name.First());
+                foreach (var item in current)
                 {
-                    DuplicationsCard d = new(i);
+                    filesToAdd = filesToAdd.Where(child => child.Name.First() != item).ToList();
+                }
+            }
+            
+            if (filesToAdd.Count != 0)
+            {
+                var count = loadAllDuplications ? filesToAdd.Count : Math.Min(filesToAdd.Count, 10);
+                for (int i  = 0;  i < count; i++)
+                {
+                    DuplicationsCard d = new(filesToAdd.ToArray()[i]);
                     DuplicationsStackPanel.Children.Add(d);
                 }
             }
             
+        }
+
+        private void LoadMoreDuplications(ConcurrentBag<DuplicatingFiles> duplicatingFiles, int number)
+        {
+            if (duplicatingFiles.Count != 0)
+            {
+                var prevCount = DuplicationsStackPanel.Children.Count;
+                for (int i = prevCount; i < duplicatingFiles.Count && i < prevCount - 1 + number; i++)
+                {
+                    DuplicationsCard d = new(duplicatingFiles.ToArray()[i]);
+                    DuplicationsStackPanel.Children.Add(d);
+                }
+            }
+        }
+
+        private void OnScrolled(object sender, ScrollViewerViewChangedEventArgs e = null)
+        {
+            var s = sender as ScrollViewer;
+            if(s.VerticalOffset + s.Height > DuplicationsStackPanel.Height - s.Height)
+            {
+                LoadMoreDuplications(FilesDataBase.Duplications, 30);
+            }
+        }
+
+        private void OnScrolled(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            OnScrolled(sender);
         }
     }
 }

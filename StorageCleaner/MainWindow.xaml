@@ -48,7 +48,8 @@
                             <FontIcon Glyph="&#xED25;" FontSize="12"/>
                         </AutoSuggestBox.QueryIcon>
                     </AutoSuggestBox>
-                    <CheckBox x:Name="IgnoreFileName" Content="{StaticResource IgnoreFileName}"/>
+                    <CheckBox x:Name="IgnoreFileName" Content="{StaticResource IgnoreFileName}" IsChecked="True"/>
+                    <Slider x:Name="WorkerCountSlider" Header="{StaticResource WorkerCount}" Minimum="1" Maximum="20" Value="12" TickFrequency="4" TickPlacement="Outside" HorizontalAlignment="Stretch"/>
                 </StackPanel>
                 <Button x:Name="StartButton" Grid.Row="1" HorizontalAlignment="Right" Content="{StaticResource Start}" Style="{ThemeResource AccentButtonStyle}" Click="StartButtonClicked"/>
             </Grid>

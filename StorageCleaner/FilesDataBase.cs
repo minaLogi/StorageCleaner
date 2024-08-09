@@ -25,7 +25,7 @@ namespace StorageCleaner
         public static ConcurrentBag<InfoFile> Files = new();
         public static void CompareFileData(StorageFile file)
         {
-            var hash = ComputeFileHash(file);
+            int hash = ComputeFileHash(file);
             var infoFile = new InfoFile(file.Name, file.Path, hash);
             lock (Files)
             {

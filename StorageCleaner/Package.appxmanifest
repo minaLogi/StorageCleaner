@@ -10,7 +10,7 @@
   <Identity
     Name="ab1c4150-dff9-406a-8c83-32b392e98ec9"
     Publisher="CN=corte"
-    Version="1.0.1.0" />
+    Version="1.1.6.0" />
 
   <mp:PhoneIdentity PhoneProductId="ab1c4150-dff9-406a-8c83-32b392e98ec9" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 

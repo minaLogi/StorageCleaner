@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Networking.Vpn;
 using Windows.Storage;
@@ -44,7 +45,9 @@ namespace StorageCleaner
                     await Task.Factory.StartNew(StartFindingFiles);
                     break;
                 case ThreadMode.Calc:
-                    await Task.Factory.StartNew(CalcFiles);
+                    await Task.Delay(1000);
+                    Thread thread = new Thread(CalcFiles);
+                    thread.Start();
                     
                     break;
             }
@@ -52,18 +55,38 @@ namespace StorageCleaner
         }
         public async void StartFindingFiles()
         {
-            LoadEnded = await FindFilesAsync(RootFolder);
+            LoadEnded = await FindFilesAsync(RootFolder, 0);
             Debug.WriteLine("Queue Ended");
         }
-        public async Task<bool> FindFilesAsync(StorageFolder folder)
+        public async Task<bool> FindFilesAsync(StorageFolder folder, int iteration)
         {
+            if(folder == null)
+            {
+                return false;
+            }
             var folders = await folder.GetFoldersAsync();
             var files = await folder.GetFilesAsync();
+            List<Thread> threads = new List<Thread>();
             if (folders.Count != 0)
             {
                 foreach (var i in folders)
                 {
-                    await FindFilesAsync(i);
+                    if (iteration < 1)
+                    {
+                        Thread thread = new Thread(() => FindFilesAsync(i, iteration+1));
+                        threads.Add(thread);
+                        thread.Start();
+                    }else
+                    {
+                        await FindFilesAsync(i, iteration + 1);
+                    }
+                }
+                if (iteration < 1)
+                {
+                    foreach (var thread in threads)
+                    {
+                        thread.Join();
+                    }
                 }
             }
             
@@ -78,7 +101,10 @@ namespace StorageCleaner
                     fileCount++;
                 }
             }
-            IsRunning = false;
+            if(iteration == 0)
+            {
+                IsRunning = false;
+            }
             return true;
         }
         public async void CalcFiles()
@@ -86,7 +112,6 @@ namespace StorageCleaner
             while ((LoadEnded == false || Queue.Count != 0) && DuplicationsWindow.IsRunning)
             {
                 StorageFile target = null;
-                GC.Collect();
                 lock (Queue)
                 {
                     if (Queue.Count > 0)
@@ -103,6 +128,11 @@ namespace StorageCleaner
                 else
                 {
                     await Task.Delay(100);
+                }
+                target = null;
+                if (ID == 1)
+                {
+                    GC.Collect();
                 }
             }
             IsRunning = false;
